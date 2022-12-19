@@ -220,7 +220,13 @@ class TextFeatureSource {
                 features = (new GFFHelper(this.config)).combineFeatures(features, genomicInterval)
             }
 
-            // Assign overlapping features to rows
+            if (this.config.type === "heatmap" ) {
+              // For display of heatmaps delivered as BED files, the "name" field is
+              // expected to be a row designator. (It has no other use in this context.)
+              for (let f of features) {
+                f.row = parseInt(f.name)
+              }
+            } else
             if (this.config.format !== "wig" && this.config.type !== "junctions") {
                 const maxRows = this.config.maxRows || Number.MAX_SAFE_INTEGER
                 packFeatures(features, maxRows)

@@ -35,7 +35,7 @@ import {renderFusionJuncSpan} from "./render/renderFusionJunction.js"
 import {StringUtils} from "../../node_modules/igv-utils/src/index.js"
 import {ColorTable, PaletteColorTable} from "../util/colorPalletes.js"
 import {isSecureContext} from "../util/igvUtils.js"
-
+import {renderCell, linear_colormap} from "./heatmap.js";
 
 class FeatureTrack extends TrackBase {
 
@@ -82,6 +82,25 @@ class FeatureTrack extends TrackBase {
             this.expandedRowHeight = config.expandedRowHeight || 10
             this.squishedRowHeight = config.squishedRowHeight || 5
             this.height = config.height || 30
+        } else if ('heatmap' === config.type) {
+
+            this.render = renderCell;
+
+            // Provide defaults for _everything_ so something displays, but...
+            this.noDataColor = config.noDataColor || "#FF00FF";
+            this.height  = config.height || 96;
+            this.maxRows = config.maxRows || 10; // overriding above
+            this.colorFn = config.colorFn || ( (f) => linear_colormap(f.score) );
+
+            // ...give the user who didn't RTFM some console guidance.
+
+            if(  config.noDataColor === undefined
+              || config.maxRows     === undefined
+              || config.height      === undefined) {
+              console.warn( "Suboptimal defaults used for 1 or more of maxRows, height, noDataColor and colorFn in heatmap.")
+            }
+            // Confirmed: no options in default clause required here.
+
         } else {
             this.render = config.render || renderFeature
             this.arrowSpacing = 30
@@ -92,6 +111,7 @@ class FeatureTrack extends TrackBase {
             this.height = config.height || this.margin + 2 * this.expandedRowHeight
 
             // Set colorBy fields considering legacy options for backward compatibility
+          //
             if (config.colorBy) {
                 if (config.colorBy.field) {
                     config.colorTable = config.colorBy.pallete || config.colorBy.palette
@@ -157,6 +177,10 @@ class FeatureTrack extends TrackBase {
      */
     computePixelHeight(features) {
 
+        if (this.type == "heatmap" ) {
+          return this.height;
+        }
+
         if (this.displayMode === "COLLAPSED") {
             return this.margin + this.expandedRowHeight
         } else {
@@ -168,10 +192,8 @@ class FeatureTrack extends TrackBase {
                     }
                 }
             }
-
             const height = this.margin + (maxRow + 1) * ("SQUISHED" === this.displayMode ? this.squishedRowHeight : this.expandedRowHeight)
             return height
-
         }
     };
 
@@ -185,9 +207,10 @@ class FeatureTrack extends TrackBase {
         const pixelHeight = options.pixelHeight
         const bpEnd = bpStart + pixelWidth * bpPerPixel + 1
 
-
-        if (!this.config.isMergedTrack) {
-            IGVGraphics.fillRect(ctx, 0, options.pixelTop, pixelWidth, pixelHeight, {'fillStyle': "rgb(255, 255, 255)"})
+        if( ! this.config.isMergedTrack ) {
+          IGVGraphics.fillRect( ctx, 0, options.pixelTop, pixelWidth, pixelHeight,
+            {'fillStyle': this.noDataColor === undefined ? "rgb(255, 255, 255)" : this.noDataColor
+          })
         }
 
         if (featureList) {
@@ -221,12 +244,13 @@ class FeatureTrack extends TrackBase {
                 if (!last || pxEnd > last) {
                     this.render.call(this, feature, bpStart, bpPerPixel, pixelHeight, ctx, options)
 
-                    // Ensure a visible gap between features
-                    const pxStart = Math.floor((feature.start - bpStart) / bpPerPixel)
-                    if (last && pxStart - last <= 0) {
-                        ctx.globalAlpha = 0.5
-                        IGVGraphics.strokeLine(ctx, pxStart, 0, pxStart, pixelHeight, {'strokeStyle': "rgb(255, 255, 255)"})
-                        ctx.globalAlpha = 1.0
+                    if ( this.type !== "heatmap" ) { // Ensure a visible gap between features
+                      const pxStart = Math.floor((feature.start - bpStart) / bpPerPixel)
+                      if (last && pxStart - last <= 0) {
+                          ctx.globalAlpha = 0.5
+                          IGVGraphics.strokeLine(ctx, pxStart, 0, pxStart, pixelHeight, {'strokeStyle': "rgb(255, 255, 255)"})
+                          ctx.globalAlpha = 1.0
+                      }
                     }
                     lastPxEnd[row] = pxEnd
                 }

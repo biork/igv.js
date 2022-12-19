@@ -53,6 +53,7 @@ const getTrack = function (type, config, browser) {
         case "genes":
         case "fusionjuncspan":
         case "snp":
+        case "heatmap":
             trackKey = "feature"
             break
         case 'seg':

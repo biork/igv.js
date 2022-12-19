@@ -10,6 +10,7 @@ import version from "./version.js"
 import TrackView from "./trackView.js"
 import GenomeUtils from "./genome/genome.js"
 import {igvxhr, oauth} from "../node_modules/igv-utils/src/index.js"
+import * as heatmap from "./feature/heatmap.js"
 
 const setApiKey = igvxhr.setApiKey
 
@@ -36,6 +37,7 @@ export default {
     setOauthToken,
     oauth,
     version,
+    heatmap,
     setApiKey
 }
 

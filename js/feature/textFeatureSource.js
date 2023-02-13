@@ -220,6 +220,13 @@ class TextFeatureSource {
                 features = (new GFFHelper(this.config)).combineFeatures(features, genomicInterval)
             }
 
+            if (this.config.type === "barstack" ) {
+              // Parse the attributes into integers _once_ here, so they are
+              // ready to use in draw.
+              for (let f of features) {
+               f.sizes = f.attributes.sizes.split(",").map( x => Number.parseInt(x) )
+              }
+						} else
             // Assign overlapping features to rows
             if (this.config.format !== "wig" && this.config.type !== "junctions") {
                 const maxRows = this.config.maxRows || Number.MAX_SAFE_INTEGER

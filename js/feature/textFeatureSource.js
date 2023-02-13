@@ -221,12 +221,20 @@ class TextFeatureSource {
             }
 
             if (this.config.type === "heatmap" ) {
-              // For display of heatmaps delivered as BED files, the "name" field is
-              // expected to be a row designator. (It has no other use in this context.)
+              // For display of multi-scale heatmaps delivered as BED files,
+							// the "name" field is expected to be a row designator. It has
+							// no other use in this context.
               for (let f of features) {
                 f.row = parseInt(f.name)
               }
             } else
+            if (this.config.type === "barstack" ) {
+              // Parse the attributes (from the 4th BED field) into integers
+							// here, so draw need not parse them (repeatedly) at render time.
+              for (let f of features) {
+               f.sizes = f.attributes.sizes.split(",").map( x => Number.parseInt(x) )
+              }
+						} else // Assign overlapping features to rows
             if (this.config.format !== "wig" && this.config.type !== "junctions") {
                 const maxRows = this.config.maxRows || Number.MAX_SAFE_INTEGER
                 packFeatures(features, maxRows)
